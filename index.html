@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Gestão Financeira</title>
+		<link rel="stylesheet" href="styles.css">
+	</head>
+	<body>
+		<main class="container">
+			<div class="header-row">
+				<h1>Gestão Financeira</h1>
+				<button id="install-btn" class="install" hidden>Instalar app</button>
+			</div>
+
+			<section class="summary" aria-live="polite">
+				<div class="card">Saldo<br><strong id="balance">R$ 0,00</strong></div>
+				<div class="card">Receitas<br><strong id="income">R$ 0,00</strong></div>
+				<div class="card">Despesas<br><strong id="expense">R$ 0,00</strong></div>
+			</section>
+
+			<section class="form-section">
+				<form id="transaction-form">
+					<div class="row">
+						<label>Tipo
+							<select id="type">
+								<option value="income">Receita</option>
+								<option value="expense">Despesa</option>
+							</select>
+						</label>
+						<label>Valor
+							<input id="amount" type="number" step="0.01" required />
+						</label>
+						<label>Data
+							<input id="date" type="date" required />
+						</label>
+					</div>
+					<div class="row">
+						<label>Categoria
+							<input id="category" type="text" placeholder="Alimentação, Transporte..." />
+						</label>
+						<label>Nota
+							<input id="note" type="text" placeholder="Opcional" />
+						</label>
+					</div>
+					<div class="actions">
+						<button type="submit">Adicionar</button>
+						<button type="button" id="export-btn">Exportar CSV</button>
+						<label class="import-label">Importar CSV
+							<input id="import-file" type="file" accept="text/csv" />
+						</label>
+					</div>
+				</form>
+			</section>
+
+			<section class="list-section">
+				<h2>Transações</h2>
+				<input id="filter" placeholder="Filtrar por categoria ou nota" />
+				<ul id="transactions-list"></ul>
+			</section>
+		</main>
+
+		<link rel="manifest" href="manifest.json">
+		<meta name="theme-color" content="#4caf50">
+		<link rel="apple-touch-icon" href="icon.svg">
+		<script src="app.js"></script>
+	</body>
+</html>

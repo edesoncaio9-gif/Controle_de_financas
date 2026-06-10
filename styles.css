@@ -1,0 +1,37 @@
+:root{--bg:#f7f7fb;--card:#fff;--accent:#4caf50;--danger:#e53935;--muted:#666}
+*{box-sizing:border-box;font-family:Segoe UI,Roboto,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:#111}
+.container{max-width:900px;margin:28px auto;padding:20px}
+h1{margin:0 0 16px}
+.summary{display:flex;gap:12px;margin-bottom:18px}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.install{background:#1976d2;padding:8px 12px;border-radius:8px;color:#fff;border:none;cursor:pointer}
+.install[hidden]{display:none}
+.card{background:var(--card);padding:12px;border-radius:8px;flex:1;box-shadow:0 1px 3px rgba(0,0,0,.05);text-align:center}
+.form-section{background:var(--card);padding:12px;border-radius:8px;margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+label{flex:1;display:flex;flex-direction:column;font-size:14px}
+input,select{padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:6px}
+.actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+button:hover{opacity:.95}
+.import-label input{display:none}
+.list-section{background:var(--card);padding:12px;border-radius:8px}
+#transactions-list{list-style:none;padding:0;margin:12px 0}
+.tx{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f0f0f4}
+.tx:last-child{border-bottom:0}
+.tx.income .tx-amount{color:var(--accent)}
+.tx.expense .tx-amount{color:var(--danger)}
+.tx-main{display:flex;justify-content:space-between;gap:12px;align-items:center;width:100%}
+.tx-info{font-size:13px;color:var(--muted)}
+.tx-desc{font-weight:600;color:#222}
+.tx-actions button{background:transparent;color:var(--danger);border:1px solid #f2c1c1;padding:6px 8px;border-radius:6px;cursor:pointer}
+.tx-actions button:hover{opacity:.9}
+#filter{width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid #eee}
+
+@media (max-width:900px){.summary{flex-direction:row;flex-wrap:wrap}}
+@media (max-width:640px){.row{flex-direction:column}.summary .card{flex-basis:100%}}
+
+/* Larger touch targets */
+button, .tx-actions button, .install{min-height:44px}
+
