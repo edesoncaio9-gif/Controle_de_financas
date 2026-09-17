@@ -20,6 +20,32 @@
 				<div class="card">Despesas<br><strong id="expense">R$ 0,00</strong></div>
 			</section>
 
+			<section class="dashboard-grid">
+				<div class="panel">
+					<h3>Receita x Despesa</h3>
+					<canvas id="balanceChart"></canvas>
+				</div>
+
+				<div class="panel">
+					<h3>Movimento por mês</h3>
+					<canvas id="trendChart"></canvas>
+				</div>
+
+				<div class="panel wide">
+					<div class="panel-header">
+						<h3>Gastos por categoria</h3>
+						<label class="chart-type-label">
+							<span>Visualização</span>
+							<select id="categoryChartMode">
+								<option value="pizza">Pizza</option>
+								<option value="bar">Barras</option>
+							</select>
+						</label>
+					</div>
+					<canvas id="categoryChart"></canvas>
+				</div>
+			</section>
+
 			<section class="form-section">
 				<form id="transaction-form">
 					<div class="row">
