@@ -1,0 +1,10 @@
+{
+  "name": "controle-de-financas",
+  "version": "1.0.0",
+  "description": "Sistema de controle financeiro com aplicação web, API Node.js e PostgreSQL",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "backend": "node backend/server.js"
+  }
+}

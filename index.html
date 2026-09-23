@@ -1,95 +1,182 @@
 <!doctype html>
 <html lang="pt-BR">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<title>Gestão Financeira</title>
-		<link rel="stylesheet" href="styles.css">
-		<link rel="icon" type="image/svg+xml" href="icon.svg">
-	</head>
-	<body>
-		<main class="container">
-			<div class="header-row">
-				<h1>Gestão Financeira</h1>
-				<button id="install-btn" class="install" hidden>Instalar app</button>
-			</div>
 
-			<section class="summary" aria-live="polite">
-				<div class="card">Saldo<br><strong id="balance">R$ 0,00</strong></div>
-				<div class="card">Receitas<br><strong id="income">R$ 0,00</strong></div>
-				<div class="card">Despesas<br><strong id="expense">R$ 0,00</strong></div>
-			</section>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-			<section class="dashboard-grid">
-				<div class="panel">
-					<h3>Receita x Despesa</h3>
-					<canvas id="balanceChart"></canvas>
-				</div>
+    <title>Gestão Financeira</title>
 
-				<div class="panel">
-					<h3>Movimento por mês</h3>
-					<canvas id="trendChart"></canvas>
-				</div>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
 
-				<div class="panel wide">
-					<div class="panel-header">
-						<h3>Gastos por categoria</h3>
-						<label class="chart-type-label">
-							<span>Visualização</span>
-							<select id="categoryChartMode">
-								<option value="pizza">Pizza</option>
-								<option value="bar">Barras</option>
-							</select>
-						</label>
-					</div>
-					<canvas id="categoryChart"></canvas>
-				</div>
-			</section>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4caf50">
+    <link rel="apple-touch-icon" href="icon.svg">
+</head>
 
-			<section class="form-section">
-				<form id="transaction-form">
-					<div class="row">
-						<label>Tipo
-							<select id="type">
-								<option value="income">Receita</option>
-								<option value="expense">Despesa</option>
-							</select>
-						</label>
-						<label>Valor
-							<input id="amount" type="number" step="0.01" required />
-						</label>
-						<label>Data
-							<input id="date" type="date" required />
-						</label>
-					</div>
-					<div class="row">
-						<label>Categoria
-							<input id="category" type="text" placeholder="Alimentação, Transporte..." />
-						</label>
-						<label>Nota
-							<input id="note" type="text" placeholder="Opcional" />
-						</label>
-					</div>
-					<div class="actions">
-						<button type="submit">Adicionar</button>
-						<button type="button" id="export-btn">Exportar CSV</button>
-						<label class="import-label">Importar CSV
-							<input id="import-file" type="file" accept="text/csv" />
-						</label>
-					</div>
-				</form>
-			</section>
+<body>
 
-			<section class="list-section">
-				<h2>Transações</h2>
-				<input id="filter" placeholder="Filtrar por categoria ou nota" />
-				<ul id="transactions-list"></ul>
-			</section>
-		</main>
+    <main class="container">
 
-		<link rel="manifest" href="manifest.json">
-		<meta name="theme-color" content="#4caf50">
-		<link rel="apple-touch-icon" href="icon.svg">
-		<script src="app.js"></script>
-	</body>
+        <header class="header-row">
+            <h1>Gestão Financeira</h1>
+            <button id="install-btn" class="install" hidden>
+                Instalar app
+            </button>
+        </header>
+
+        <section class="summary" aria-label="Resumo financeiro">
+
+            <article class="card">
+                <span>Saldo</span>
+                <strong id="balance">R$ 0,00</strong>
+            </article>
+
+            <article class="card">
+                <span>Receitas</span>
+                <strong id="income">R$ 0,00</strong>
+            </article>
+
+            <article class="card">
+                <span>Despesas</span>
+                <strong id="expense">R$ 0,00</strong>
+            </article>
+
+        </section>
+
+        <section class="dashboard-grid" aria-label="Dashboard">
+
+            <article class="panel">
+                <h2>Receita x Despesa</h2>
+                <canvas id="balanceChart"></canvas>
+            </article>
+
+            <article class="panel">
+                <h2>Movimento por mês</h2>
+                <canvas id="trendChart"></canvas>
+            </article>
+
+            <article class="panel wide">
+
+                <header class="panel-header">
+                    <h2>Gastos por categoria</h2>
+
+                    <label class="chart-type-label">
+                        <span>Visualização</span>
+
+                        <select id="categoryChartMode">
+                            <option value="pizza">Pizza</option>
+                            <option value="bar">Barras</option>
+                        </select>
+                    </label>
+                </header>
+
+                <canvas id="categoryChart"></canvas>
+
+            </article>
+
+        </section>
+
+        <section class="form-section" aria-label="Nova transação">
+
+            <form id="transaction-form">
+
+                <fieldset>
+                    <legend>Adicionar transação</legend>
+
+                    <label>
+                        Tipo
+                        <select id="type">
+                            <option value="income">Receita</option>
+                            <option value="expense">Despesa</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Valor
+                        <input
+                            id="amount"
+                            type="number"
+                            step="0.01"
+                            required
+                        >
+                    </label>
+
+                    <label>
+                        Data
+                        <input
+                            id="date"
+                            type="date"
+                            required
+                        >
+                    </label>
+
+                    <label>
+                        Categoria
+                        <input
+                            id="category"
+                            type="text"
+                            placeholder="Alimentação, Transporte..."
+                        >
+                    </label>
+
+                    <label>
+                        Nota
+                        <input
+                            id="note"
+                            type="text"
+                            placeholder="Opcional"
+                        >
+                    </label>
+
+                </fieldset>
+
+                <nav class="actions" aria-label="Ações">
+
+                    <button type="submit">
+                        Adicionar
+                    </button>
+
+                    <button type="button" id="export-btn">
+                        Exportar CSV
+                    </button>
+
+                    <label class="import-label">
+                        Importar CSV
+                        <input
+                            id="import-file"
+                            type="file"
+                            accept="text/csv"
+                        >
+                    </label>
+
+                </nav>
+
+            </form>
+
+        </section>
+
+        <section class="list-section" aria-label="Histórico de transações">
+
+            <h2>Transações</h2>
+
+            <input
+                id="filter"
+                type="search"
+                placeholder="Filtrar por categoria ou nota"
+                aria-label="Filtrar transações"
+            >
+
+            <ul id="transactions-list"></ul>
+
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+
+</body>
+
 </html>
+

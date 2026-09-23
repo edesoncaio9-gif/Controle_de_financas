@@ -1,63 +1,676 @@
-:root{--bg:#f7f7fb;--card:#fff;--accent:#4caf50;--danger:#e53935;--muted:#666;--shadow:0 8px 20px rgba(15,23,42,.06)}
-*{box-sizing:border-box;font-family:Segoe UI,Roboto,Arial,sans-serif}
-body{margin:0;background:linear-gradient(180deg,#f7f7fb,#eef3f9);color:#111}
-.container{max-width:1100px;margin:28px auto;padding:20px}
-h1{margin:0 0 16px;font-size:clamp(1.8rem,2vw,2.4rem)}
-.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
-.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.install{background:#1976d2;padding:8px 12px;border-radius:8px;color:#fff;border:none;cursor:pointer}
-.install[hidden]{display:none}
-.card{background:var(--card);padding:16px;border-radius:12px;flex:1;box-shadow:var(--shadow);text-align:center;border:1px solid rgba(17,24,39,.04)}
-.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:16px;margin:18px 0}
-.panel{background:var(--card);padding:16px;border-radius:12px;box-shadow:var(--shadow);border:1px solid rgba(17,24,39,.04);display:flex;flex-direction:column;min-height:280px}
-.panel h3{margin:0 0 12px;font-size:1rem}
-.panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.chart-type-label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.chart-type-label select{padding:6px 8px;border-radius:6px;border:1px solid #ddd;background:#fff}
-.panel.wide{grid-column:1 / -1}
-canvas{display:block;width:100%;height:220px;background:linear-gradient(180deg,#fafafa,#fff);border-radius:10px;max-width:100%}
-#categoryChart{height:300px}
-.form-section{background:var(--card);padding:12px;border-radius:8px;margin-bottom:16px;box-shadow:var(--shadow);border:1px solid rgba(17,24,39,.04)}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-label{flex:1;display:flex;flex-direction:column;font-size:14px;min-width:140px}
-input,select{padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:6px;background:#fff}
-.actions{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
-button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-button:hover{opacity:.95}
-#import-file + * { background:#f5c542; }
-.import-label{display:inline-flex;align-items:center;justify-content:center;background:#f5c542;color:#222;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;min-height:44px}
-.import-label input{display:none}
-.list-section{background:var(--card);padding:12px;border-radius:8px;box-shadow:var(--shadow);border:1px solid rgba(17,24,39,.04)}
-#transactions-list{list-style:none;padding:0;margin:12px 0}
-.tx{display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid #f0f0f4;gap:12px}
-.tx:last-child{border-bottom:0}
-.tx.income .tx-amount{color:var(--accent)}
-.tx.expense .tx-amount{color:var(--danger)}
-.tx-main{display:flex;justify-content:space-between;gap:12px;align-items:center;width:100%}
-.tx-info{font-size:13px;color:var(--muted)}
-.tx-desc{font-weight:600;color:#222;word-break:break-word}
-.tx-actions button{background:transparent;color:var(--danger);border:1px solid #f2c1c1;padding:6px 8px;border-radius:6px;cursor:pointer}
-.tx-actions button:hover{opacity:.9}
-#filter{width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid #eee}
+/* =========================================================
+   1. VARIÁVEIS
+   ========================================================= */
 
-@media (max-width:900px){
-	.summary{grid-template-columns:repeat(2,minmax(0,1fr));}
-	.dashboard-grid{grid-template-columns:1fr;}
-	.panel.wide{grid-column:auto;}
+:root {
+    --bg: #f7f7fb;
+    --bg-secondary: #eef3f9;
+
+    --card: #ffffff;
+
+    --accent: #4caf50;
+    --accent-dark: #388e3c;
+
+    --danger: #e53935;
+    --danger-light: #f2c1c1;
+
+    --info: #1976d2;
+    --warning: #f5c542;
+
+    --text: #111111;
+    --text-secondary: #666666;
+    --border: #e5e7eb;
+
+    --shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
 }
 
-@media (max-width:640px){
-	.container{padding:16px 12px 24px;}
-	.header-row{align-items:flex-start;flex-direction:column;}
-	.summary{grid-template-columns:1fr;}
-	.row{flex-direction:column;}
-	.actions{flex-direction:column;align-items:stretch;}
-	.actions > *{width:100%;}
-	.import-label{display:flex;}
-	.tx-main{flex-direction:column;align-items:flex-start;}
-	#categoryChart{height:300px;}
+
+/* =========================================================
+   2. RESET E CONFIGURAÇÕES GERAIS
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* Larger touch targets */
-button, .tx-actions button, .install{min-height:44px}
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(
+        180deg,
+        var(--bg),
+        var(--bg-secondary)
+    );
+    color: var(--text);
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+
+/* =========================================================
+   3. LAYOUT PRINCIPAL
+   ========================================================= */
+
+.container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 28px auto;
+    padding: 20px;
+}
+
+
+/* =========================================================
+   4. CABEÇALHO
+   ========================================================= */
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 2vw, 2.4rem);
+}
+
+h2,
+h3 {
+    margin-top: 0;
+}
+
+
+/* =========================================================
+   5. BOTÃO DE INSTALAÇÃO
+   ========================================================= */
+
+.install {
+    min-height: 44px;
+    padding: 8px 14px;
+
+    background: var(--info);
+    color: #ffffff;
+
+    border: none;
+    border-radius: var(--radius-sm);
+
+    cursor: pointer;
+}
+
+.install:hover {
+    opacity: 0.92;
+}
+
+.install[hidden] {
+    display: none;
+}
+
+
+/* =========================================================
+   6. RESUMO FINANCEIRO
+   ========================================================= */
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    padding: 18px;
+
+    background: var(--card);
+    border: 1px solid rgba(17, 24, 39, 0.04);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow);
+
+    text-align: center;
+}
+
+.card strong {
+    font-size: 1.25rem;
+}
+
+
+/* =========================================================
+   7. DASHBOARD
+   ========================================================= */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 18px 0;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+
+    min-height: 280px;
+    padding: 18px;
+
+    background: var(--card);
+    border: 1px solid rgba(17, 24, 39, 0.04);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow);
+}
+
+.panel h2,
+.panel h3 {
+    margin-bottom: 14px;
+    font-size: 1rem;
+}
+
+.panel.wide {
+    grid-column: 1 / -1;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+
+/* =========================================================
+   8. GRÁFICOS
+   ========================================================= */
+
+canvas {
+    display: block;
+
+    width: 100%;
+    height: 220px;
+    max-width: 100%;
+
+    background: linear-gradient(
+        180deg,
+        #fafafa,
+        #ffffff
+    );
+
+    border-radius: var(--radius-md);
+}
+
+#categoryChart {
+    height: 300px;
+}
+
+.chart-type-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.chart-type-label select {
+    padding: 6px 8px;
+
+    background: #ffffff;
+
+    border: 1px solid #dddddd;
+    border-radius: var(--radius-sm);
+}
+
+
+/* =========================================================
+   9. FORMULÁRIO
+   ========================================================= */
+
+.form-section {
+    margin-bottom: 18px;
+    padding: 18px;
+
+    background: var(--card);
+    border: 1px solid rgba(17, 24, 39, 0.04);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow);
+}
+
+#transaction-form fieldset {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+
+    margin: 0;
+    padding: 0;
+
+    border: none;
+}
+
+#transaction-form legend {
+    margin-bottom: 14px;
+
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 140px;
+
+    font-size: 14px;
+    font-weight: 500;
+}
+
+input,
+select {
+    width: 100%;
+
+    margin-top: 6px;
+    padding: 10px 11px;
+
+    background: #ffffff;
+
+    border: 1px solid #dddddd;
+    border-radius: var(--radius-sm);
+
+    color: var(--text);
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+
+/* =========================================================
+   10. AÇÕES
+   ========================================================= */
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+button {
+    min-height: 44px;
+
+    padding: 9px 14px;
+
+    background: var(--accent);
+    color: #ffffff;
+
+    border: none;
+    border-radius: var(--radius-sm);
+
+    cursor: pointer;
+
+    font-weight: 600;
+}
+
+button:hover {
+    opacity: 0.92;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   11. IMPORTAÇÃO CSV
+   ========================================================= */
+
+.import-label {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+    padding: 9px 14px;
+
+    background: var(--warning);
+    color: #222222;
+
+    border-radius: var(--radius-sm);
+
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.import-label input {
+    display: none;
+}
+
+
+/* =========================================================
+   12. LISTA DE TRANSAÇÕES
+   ========================================================= */
+
+.list-section {
+    padding: 18px;
+
+    background: var(--card);
+    border: 1px solid rgba(17, 24, 39, 0.04);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow);
+}
+
+.list-section h2 {
+    margin-bottom: 12px;
+}
+
+#filter {
+    width: 100%;
+    padding: 10px 11px;
+
+    border: 1px solid #dddddd;
+    border-radius: var(--radius-sm);
+}
+
+#transactions-list {
+    list-style: none;
+
+    margin: 12px 0 0;
+    padding: 0;
+}
+
+
+/* =========================================================
+   13. TRANSAÇÃO
+   ========================================================= */
+
+.tx {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+
+    padding: 12px 8px;
+
+    border-bottom: 1px solid #f0f0f4;
+}
+
+.tx:last-child {
+    border-bottom: none;
+}
+
+.tx-main {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    gap: 12px;
+}
+
+.tx-info {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.tx-desc {
+    color: #222222;
+
+    font-weight: 600;
+
+    word-break: break-word;
+}
+
+.tx-date {
+    margin-top: 3px;
+}
+
+.tx-amount {
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.tx.income .tx-amount {
+    color: var(--accent);
+}
+
+.tx.expense .tx-amount {
+    color: var(--danger);
+}
+
+
+/* =========================================================
+   14. AÇÕES DA TRANSAÇÃO
+   ========================================================= */
+
+.tx-actions button {
+    min-height: 40px;
+
+    padding: 6px 9px;
+
+    background: transparent;
+    color: var(--danger);
+
+    border: 1px solid var(--danger-light);
+    border-radius: var(--radius-sm);
+}
+
+.tx-actions button:hover {
+    opacity: 0.9;
+}
+
+
+/* =========================================================
+   15. TELA DE LOGIN
+   ========================================================= */
+
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-card {
+    padding: 36px;
+
+    background: var(--card);
+
+    border: 1px solid rgba(17, 24, 39, 0.04);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow);
+}
+
+.login-header {
+    margin-bottom: 28px;
+
+    text-align: center;
+}
+
+.login-header h1 {
+    margin-bottom: 8px;
+}
+
+.login-header p {
+    margin: 0;
+
+    color: var(--text-secondary);
+}
+
+#login-form {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+#login-form label {
+    margin-top: 6px;
+}
+
+#login-form input {
+    padding: 12px;
+}
+
+#login-button {
+    width: 100%;
+
+    margin-top: 16px;
+    padding: 12px;
+
+    background: var(--accent);
+
+    font-size: 16px;
+}
+
+#login-button:hover {
+    background: var(--accent-dark);
+}
+
+.login-error {
+    margin: 8px 0 0;
+
+    color: var(--danger);
+
+    font-size: 14px;
+}
+
+.login-footer {
+    margin-top: 24px;
+
+    color: var(--text-secondary);
+
+    text-align: center;
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   16. RESPONSIVIDADE — TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .panel.wide {
+        grid-column: auto;
+    }
+
+    #transaction-form fieldset {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+/* =========================================================
+   17. RESPONSIVIDADE — CELULAR
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+    .container {
+        margin: 0 auto;
+        padding: 16px 12px 24px;
+    }
+
+    .header-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .summary {
+        grid-template-columns: 1fr;
+    }
+
+    #transaction-form fieldset {
+        grid-template-columns: 1fr;
+    }
+
+    .actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .actions > * {
+        width: 100%;
+    }
+
+    .import-label {
+        display: flex;
+    }
+
+    .tx-main {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #categoryChart {
+        height: 300px;
+    }
+
+    .login-card {
+        padding: 28px 22px;
+    }
+}
+
+
+/* =========================================================
+   18. ACESSIBILIDADE / TOUCH
+   ========================================================= */
+
+button,
+.tx-actions button,
+.install {
+    min-height: 44px;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
 

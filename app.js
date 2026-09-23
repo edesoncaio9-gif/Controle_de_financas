@@ -1,3 +1,51 @@
+const API_URL = 'http://localhost:3000/api';
+
+let authToken = localStorage.getItem('authToken');
+
+async function apiRequest(endpoint, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+
+    if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || 'Erro na comunicação com a API.');
+    }
+
+    return data;
+}
+
+async function getTransactionsFromAPI() {
+    try {
+        const data = await apiRequest('/transactions');
+
+        return data.transactions.map(t => ({
+            id: String(t.id),
+            type: t.type === 'receita' ? 'income' : 'expense',
+            amount: Number(t.amount),
+            date: t.date.slice(0, 10),
+            category: t.category || '',
+            note: t.note || ''
+        }));
+
+    } catch (error) {
+        console.error('Erro ao buscar transações:', error);
+        alert(error.message);
+        return [];
+    }
+}
+
 const STORAGE_KEY = 'transactions_v1';
 
 function uid() {
