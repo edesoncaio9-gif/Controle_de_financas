@@ -84,6 +84,12 @@ select {
     margin-bottom: 18px;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 h1 {
     margin: 0;
     font-size: clamp(1.8rem, 2vw, 2.4rem);
@@ -341,6 +347,10 @@ button:hover {
 button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.back-to-login {
+    background: var(--danger);
 }
 
 
@@ -619,6 +629,10 @@ button:disabled {
     .header-row {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .header-actions {
+        align-self: flex-end;
     }
 
     .summary {

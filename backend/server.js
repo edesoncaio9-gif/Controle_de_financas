@@ -2,23 +2,40 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
 const pool = require('./db');
 const authenticateToken = require('./authMiddleware');
 
 const app = express();
 
+function normalizeGmailAddress(email) {
+    if (typeof email !== 'string') return null;
+
+    const normalizedEmail = email.trim().toLowerCase();
+    return /^[^\s@]+@gmail\.com$/.test(normalizedEmail)
+        ? normalizedEmail
+        : null;
+}
+
 app.use(cors());
 app.use(express.json());
+
+const frontendPath = path.join(__dirname, '..');
+
+app.use(express.static(frontendPath, {
+    index: false,
+    dotfiles: 'deny'
+}));
+
+
 
 // ==========================================
 // ROTA PRINCIPAL
 // ==========================================
 
 app.get('/', (req, res) => {
-    res.json({
-        message: 'API do Controle de Finanças funcionando!'
-    });
+    res.sendFile(path.join(frontendPath, 'login.html'));
 });
 
 // ==========================================
@@ -48,11 +65,12 @@ app.get('/api/test-db', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, password } = req.body;
+        const email = normalizeGmailAddress(req.body.email);
 
         if (!name || !email || !password) {
             return res.status(400).json({
-                error: 'Nome, e-mail e senha são obrigatórios.'
+                error: 'Nome, Gmail válido (@gmail.com) e senha são obrigatórios.'
             });
         }
 
@@ -63,7 +81,7 @@ app.post('/api/users', async (req, res) => {
 
         if (existingUser.rows.length > 0) {
             return res.status(409).json({
-                error: 'Este e-mail já está cadastrado.'
+                error: 'Este Gmail já está cadastrado.'
             });
         }
 
@@ -96,11 +114,12 @@ app.post('/api/users', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { password } = req.body;
+        const email = normalizeGmailAddress(req.body.email);
 
         if (!email || !password) {
             return res.status(400).json({
-                error: 'E-mail e senha são obrigatórios.'
+                error: 'Gmail válido (@gmail.com) e senha são obrigatórios.'
             });
         }
 
@@ -111,7 +130,7 @@ app.post('/api/login', async (req, res) => {
 
         if (result.rows.length === 0) {
             return res.status(401).json({
-                error: 'E-mail ou senha inválidos.'
+                error: 'Gmail ou senha inválidos.'
             });
         }
 
@@ -124,7 +143,7 @@ app.post('/api/login', async (req, res) => {
 
         if (!passwordMatch) {
             return res.status(401).json({
-                error: 'E-mail ou senha inválidos.'
+                error: 'Gmail ou senha inválidos.'
             });
         }
 
@@ -414,6 +433,6 @@ app.put('/api/transactions/:id', authenticateToken, async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });

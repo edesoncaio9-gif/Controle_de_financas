@@ -22,37 +22,106 @@
                 <p>Acesse sua conta</p>
             </header>
 
-            <form id="login-form">
+           <form id="login-form">
+    <label for="email">
+        Gmail
+    </label>
 
-                <label for="email">
-                    E-mail
-                </label>
+    <input
+        id="email"
+        type="email"
+        placeholder="usuario@gmail.com"
+        autocomplete="email"
+        required
+    >
 
-                <input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    autocomplete="email"
-                    required
-                >
+    <label for="password">
+        Senha
+    </label>
 
-                <label for="password">
-                    Senha
-                </label>
+    <input
+        id="password"
+        type="password"
+        placeholder="Digite sua senha"
+        autocomplete="current-password"
+        required
+    >
 
-                <input
-                    id="password"
-                    type="password"
-                    placeholder="Digite sua senha"
-                    autocomplete="current-password"
-                    required
-                >
+    <p id="login-error" class="login-error" hidden></p>
 
-                <p id="login-error" class="login-error" hidden></p>
+    <button type="submit" id="login-button">
+        Entrar
+    </button>
 
-                <button type="submit" id="login-button">
-                    Entrar
-                </button>
+    <button type="button" id="show-register">
+        Criar uma conta
+    </button>
+</form>
+
+
+<form id="register-form" hidden>
+
+    <h2>Criar conta</h2>
+
+    <label for="register-name">
+        Nome
+    </label>
+
+    <input
+        id="register-name"
+        type="text"
+        placeholder="Seu nome"
+        autocomplete="name"
+        required
+    >
+
+    <label for="register-email">
+        Gmail
+    </label>
+
+    <input
+        id="register-email"
+        type="email"
+        placeholder="usuario@gmail.com"
+        autocomplete="email"
+        required
+    >
+
+    <label for="register-password">
+        Senha
+    </label>
+
+    <input
+        id="register-password"
+        type="password"
+        placeholder="Crie uma senha"
+        autocomplete="new-password"
+        minlength="6"
+        required
+    >
+
+    <label for="register-password-confirm">
+        Confirmar senha
+    </label>
+
+    <input
+        id="register-password-confirm"
+        type="password"
+        placeholder="Digite a senha novamente"
+        autocomplete="new-password"
+        minlength="6"
+        required
+    >
+
+    <p id="register-error" class="login-error" hidden></p>
+
+    <button type="submit" id="register-button">
+        Criar conta
+    </button>
+
+    <button type="button" id="show-login">
+        Já tenho uma conta
+    </button>
 
             </form>
 

@@ -1,6 +1,11 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://172.28.4.149:3000/api';
 
 let authToken = localStorage.getItem('authToken');
+let transactions = [];
+
+if (!authToken) {
+    window.location.href = 'login.html';
+}
 
 async function apiRequest(endpoint, options = {}) {
     const headers = {
@@ -20,50 +25,30 @@ async function apiRequest(endpoint, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('authToken');
+        window.location.href = 'login.html';
+      }
         throw new Error(data.error || 'Erro na comunicação com a API.');
     }
 
     return data;
 }
 
+function mapAPITransaction(transaction) {
+    return {
+        id: String(transaction.id),
+        type: transaction.type === 'receita' ? 'income' : 'expense',
+        amount: Number(transaction.amount),
+        date: String(transaction.date).slice(0, 10),
+        category: transaction.category || '',
+        note: transaction.note || ''
+    };
+}
+
 async function getTransactionsFromAPI() {
-    try {
-        const data = await apiRequest('/transactions');
-
-        return data.transactions.map(t => ({
-            id: String(t.id),
-            type: t.type === 'receita' ? 'income' : 'expense',
-            amount: Number(t.amount),
-            date: t.date.slice(0, 10),
-            category: t.category || '',
-            note: t.note || ''
-        }));
-
-    } catch (error) {
-        console.error('Erro ao buscar transações:', error);
-        alert(error.message);
-        return [];
-    }
-}
-
-const STORAGE_KEY = 'transactions_v1';
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-function loadTransactions() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error('Erro ao ler storage', e);
-    return [];
-  }
-}
-
-function saveTransactions(tx) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tx));
+    const data = await apiRequest('/transactions');
+    return data.transactions.map(mapAPITransaction);
 }
 
 function formatCurrencyBRL(value) {
@@ -365,7 +350,7 @@ function renderTransactions(tx, filterText = '') {
   });
 }
 
-function addTransactionFromForm(e) {
+async function addTransactionFromForm(e) {
   e.preventDefault();
   const type = document.getElementById('type').value;
   const amountRaw = document.getElementById('amount').value;
@@ -379,63 +364,159 @@ function addTransactionFromForm(e) {
     return;
   }
 
-  const tx = loadTransactions();
-  const transaction = { id: uid(), type, amount: Math.abs(amount), date, category, note };
-  tx.push(transaction);
-  saveTransactions(tx);
-  renderTransactions(tx, document.getElementById('filter').value);
-  renderSummary(tx);
-  e.target.reset();
+  try {
+    const data = await apiRequest('/transactions', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: type === 'income' ? 'receita' : 'despesa',
+        amount: Math.abs(amount),
+        date,
+        category: category || null,
+        note: note || null
+      })
+    });
+    transactions.push(mapAPITransaction(data.transaction));
+    renderTransactions(transactions, document.getElementById('filter').value);
+    renderSummary(transactions);
+    e.target.reset();
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
-function deleteTransaction(id) {
-  let tx = loadTransactions();
-  tx = tx.filter(t => t.id !== id);
-  saveTransactions(tx);
-  renderTransactions(tx, document.getElementById('filter').value);
-  renderSummary(tx);
+async function deleteTransaction(id) {
+  try {
+    await apiRequest(`/transactions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    transactions = transactions.filter(transaction => transaction.id !== id);
+    renderTransactions(transactions, document.getElementById('filter').value);
+    renderSummary(transactions);
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
 function exportCSV() {
-  const tx = loadTransactions();
-  if (!tx.length) {
+  if (!transactions.length) {
     alert('Nenhuma transação para exportar.');
     return;
   }
-  const header = ['id','type','amount','date','category','note'];
-  const rows = tx.map(t => header.map(h => csvSafe(t[h])).join(','));
-  const csv = [header.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const header = ['ID', 'Tipo', 'Valor', 'Data', 'Categoria', 'Observação'];
+  const rows = transactions.map(t => [
+    t.id,
+    t.type === 'income' ? 'Receita' : 'Despesa',
+    Number(t.amount).toFixed(2).replace('.', ','),
+    formatDateForCSV(t.date),
+    t.category,
+    t.note
+  ].map(csvSafe).join(';'));
+  const csv = [header.map(csvSafe).join(';'), ...rows].join('\r\n');
+  const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+  if (window.AndroidCsv && typeof window.AndroidCsv.saveCsv === 'function') {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      window.AndroidCsv.saveCsv('transacoes.csv', dataUrl.split(',')[1] || '');
+    };
+    reader.readAsDataURL(blob);
+    return;
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'transactions.csv';
+  a.download = 'transacoes.csv';
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
 
+function formatDateForCSV(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value || '';
+}
+
 function importCSVFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (ev) => {
-    const text = ev.target.result;
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (!lines.length) return;
-    const header = lines.shift().split(',').map(h => h.trim());
-    const tx = loadTransactions();
-    lines.forEach(line => {
-      const cols = parseCsvLine(line);
-      const obj = {};
-      header.forEach((h, i) => obj[h] = cols[i] || '');
-      const amount = parseFloat(String(obj.amount || '').replace(',', '.')) || 0;
-      tx.push({ id: obj.id || uid(), type: obj.type || 'expense', amount: Math.abs(amount), date: obj.date || new Date().toISOString().slice(0,10), category: obj.category || '', note: obj.note || '' });
-    });
-    saveTransactions(tx);
-    renderTransactions(tx, document.getElementById('filter').value);
-    renderSummary(tx);
-    alert('Importação concluída.');
+  reader.onload = async (ev) => {
+    const rows = parseCSV(ev.target.result);
+    if (!rows.length) return;
+    const header = rows.shift().map(normalizeCSVHeader);
+    const fields = {
+      type: ['type', 'tipo'],
+      amount: ['amount', 'valor'],
+      date: ['date', 'data'],
+      category: ['category', 'categoria'],
+      note: ['note', 'nota', 'observacao']
+    };
+    const columnIndexes = Object.fromEntries(
+      Object.entries(fields).map(([field, aliases]) => [field, header.findIndex(value => aliases.includes(value))])
+    );
+
+    if (['type', 'amount', 'date'].some(field => columnIndexes[field] < 0)) {
+      alert('O CSV precisa conter as colunas tipo, valor e data.');
+      return;
+    }
+
+    const importedTransactions = [];
+    for (const cols of rows) {
+      const value = field => columnIndexes[field] < 0 ? '' : (cols[columnIndexes[field]] || '').trim();
+      const rawAmount = value('amount');
+      const amountText = rawAmount.includes(',')
+        ? rawAmount.replace(/\./g, '').replace(',', '.')
+        : rawAmount;
+      const rawType = value('type').toLowerCase();
+      const rawDate = value('date');
+      const dateMatch = rawDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const date = dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : rawDate;
+      const amount = Number(amountText);
+      const type = ['income', 'receita'].includes(rawType)
+        ? 'receita'
+        : ['expense', 'despesa'].includes(rawType) ? 'despesa' : null;
+
+      if (!type || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        alert('O CSV contém uma linha com tipo, valor ou data inválidos. Nenhuma linha foi importada.');
+        return;
+      }
+
+      importedTransactions.push({
+        type,
+        amount,
+        date,
+        category: value('category') || null,
+        note: value('note') || null
+      });
+    }
+
+    if (!importedTransactions.length) {
+      alert('O CSV não contém transações para importar.');
+      return;
+    }
+
+    let importedCount = 0;
+    try {
+      for (const transaction of importedTransactions) {
+        await apiRequest('/transactions', {
+          method: 'POST',
+          body: JSON.stringify(transaction)
+        });
+        importedCount++;
+      }
+      transactions = await getTransactionsFromAPI();
+      renderTransactions(transactions, document.getElementById('filter').value);
+      renderSummary(transactions);
+      alert(`Importação concluída: ${importedCount} transações.`);
+    } catch (error) {
+      try {
+        transactions = await getTransactionsFromAPI();
+        renderTransactions(transactions, document.getElementById('filter').value);
+        renderSummary(transactions);
+      } catch (refreshError) {
+        console.error('Erro ao atualizar transações:', refreshError);
+      }
+      alert(`Importação interrompida após ${importedCount} de ${importedTransactions.length} transações. ${error.message}`);
+    }
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -446,18 +527,59 @@ function csvSafe(value) {
   return `"${s}"`;
 }
 
-function parseCsvLine(line) {
-  const result = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { inQuotes = !inQuotes; continue; }
-    if (ch === ',' && !inQuotes) { result.push(cur); cur = ''; continue; }
-    cur += ch;
+function normalizeCSVHeader(value) {
+  return String(value)
+    .replace(/^\uFEFF/, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function parseCSV(text) {
+  const input = String(text || '').replace(/^\uFEFF/, '');
+  let commas = 0;
+  let semicolons = 0;
+  let quoted = false;
+
+  for (let index = 0; index < input.length && input[index] !== '\n' && input[index] !== '\r'; index++) {
+    const character = input[index];
+    if (character === '"' && input[index + 1] === '"' && quoted) index++;
+    else if (character === '"') quoted = !quoted;
+    else if (!quoted && character === ',') commas++;
+    else if (!quoted && character === ';') semicolons++;
   }
-  result.push(cur);
-  return result.map(s => s.replace(/""/g, '"').trim());
+
+  const delimiter = semicolons > commas ? ';' : ',';
+  const rows = [];
+  let row = [];
+  let value = '';
+  quoted = false;
+
+  for (let index = 0; index < input.length; index++) {
+    const character = input[index];
+    if (character === '"' && quoted && input[index + 1] === '"') {
+      value += '"';
+      index++;
+    } else if (character === '"') {
+      quoted = !quoted;
+    } else if (!quoted && character === delimiter) {
+      row.push(value);
+      value = '';
+    } else if (!quoted && (character === '\n' || character === '\r')) {
+      if (character === '\r' && input[index + 1] === '\n') index++;
+      row.push(value);
+      if (row.some(cell => cell !== '')) rows.push(row);
+      row = [];
+      value = '';
+    } else {
+      value += character;
+    }
+  }
+
+  row.push(value);
+  if (row.some(cell => cell !== '')) rows.push(row);
+  return rows;
 }
 
 function escapeHtml(s) {
@@ -477,25 +599,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('filter').addEventListener('input', (e) => {
-    const tx = loadTransactions();
-    renderTransactions(tx, e.target.value);
+    renderTransactions(transactions, e.target.value);
   });
 
   const categoryChartMode = document.getElementById('categoryChartMode');
   categoryChartMode.addEventListener('change', () => {
-    const tx = loadTransactions();
-    renderSummary(tx);
+    renderSummary(transactions);
   });
 
   window.addEventListener('resize', () => {
-    const tx = loadTransactions();
-    renderSummary(tx);
+    renderSummary(transactions);
   });
 
-  // Initialize
-  const tx = loadTransactions();
-  renderTransactions(tx);
-  renderSummary(tx);
+  getTransactionsFromAPI().then(data => {
+    transactions = data;
+    renderTransactions(transactions);
+    renderSummary(transactions);
+  }).catch(error => {
+    console.error('Erro ao carregar transações:', error);
+    alert(error.message);
+  });
 });
 
 // Register service worker and handle PWA install prompt
@@ -522,3 +645,10 @@ if ('serviceWorker' in navigator) {
     console.log('ServiceWorker registrado', reg.scope);
   }).catch(err => console.warn('ServiceWorker falhou', err));
 }
+
+const backToLoginButton = document.getElementById('back-to-login');
+
+backToLoginButton.addEventListener('click', () => {
+  localStorage.removeItem('authToken');
+  window.location.href = 'login.html';
+});

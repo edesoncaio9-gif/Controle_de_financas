@@ -1,41 +1,76 @@
-# Sistema de Gestão Financeira (local)
+# Sistema de Gestão Financeira
 
-Aplicação web simples para controlar receitas e despesas localmente usando `localStorage`.
+O repositório contém uma aplicação web com frontend em JavaScript, API Node.js/Express e PostgreSQL, além de um aplicativo Android nativo independente.
 
-Como usar
+## Aplicação web
 
-1. Abra `index.html` no seu navegador (recomendado via servidor local, ex: `npx http-server` ou `python -m http.server`).
-2. Preencha o formulário para adicionar transações (Receita/Despesa).
-3. Utilize o filtro para buscar por categoria ou nota.
-4. Exporte ou importe transações em CSV para backup/restore.
+O frontend web autentica usuários com endereço Gmail e senha. As senhas são armazenadas pela API como hashes; após o login, a API emite um token JWT.
 
-PWA / App para celular
+As transações financeiras da aplicação web são carregadas e persistidas no PostgreSQL por meio da API autenticada, vinculadas ao usuário conectado. O navegador mantém o token da sessão; não é usado como banco de transações.
 
-- O aplicativo já tem suporte PWA: instale pelo navegador (menu > "Adicionar à tela inicial") ou use o botão "Instalar app" quando disponível.
-- Para testar o PWA localmente rode um servidor estático e abra `index.html` pelo `http://localhost:PORT`.
-- Para empacotar como app nativo, recomendo usar Capacitor (Ionic) ou Cordova. Exemplo rápido com Capacitor:
+O painel oferece:
 
-```bash
-npm init -y
-npm install @capacitor/cli @capacitor/core --save-dev
-npx cap init
-# Copie os arquivos da pasta para www e depois:
-npx cap add android
-npx cap add ios
-npx cap copy
-npx cap open android
-```
+- Cadastro e login de usuários com Gmail.
+- Inclusão e remoção de receitas e despesas.
+- Resumo de saldo, receitas e despesas, gráficos e filtro do histórico.
+- Importação e exportação de transações CSV.
+- Instalação como PWA quando suportada pelo navegador.
+- Botão para sair e voltar à tela de login.
 
-Observações
+### Requisitos
 
-- Aplicação single-user; os dados ficam no navegador (`localStorage`). Fazer backup/export regularmente.
-- Service Worker simples para cache de recursos; rode via servidor para ativá-lo.
+- Node.js e npm.
+- PostgreSQL acessível pelo servidor da API.
+- Banco configurado com as tabelas `users` e `transactions` usadas pelo backend.
 
-Tecnologias e como foi criado
+### Configuração e execução
 
-- Estrutura: HTML5, CSS3 e JavaScript (ES6+), sem frameworks para manter a aplicação leve.
-- Persistência: `localStorage` para armazenamento local das transações.
-- PWA: `manifest.json` e `service-worker.js` para instalação e cache offline.
-- Ícone: `icon.svg` (SVG) usado no manifest.
-- Empacotamento: use Capacitor para transformar em app nativo (Android/iOS).
+1. Configure `backend/.env` com `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` e `JWT_SECRET`. Use valores próprios do ambiente e não publique credenciais.
+2. Instale as dependências do backend a partir da raiz do repositório:
+
+	```bash
+	npm install --prefix backend
+	```
+
+3. Inicie a API e o servidor web:
+
+	```bash
+	npm run backend
+	```
+
+4. Abra `http://172.28.4.149:3000/` na rede em que o servidor está acessível.
+
+O endereço da API está configurado em `login.js` e `app.js` como `http://172.28.4.149:3000/api`. Se o endereço ou a porta do servidor mudar, atualize os dois arquivos.
+
+O backend espera as tabelas PostgreSQL `users` (com `id`, `name`, `email`, `password_hash`, `created_at`) e `transactions` (com `id`, `user_id`, `type`, `amount`, `date`, `category`, `note`, `created_at`). O backend não cria essas tabelas automaticamente; preserve e use o esquema já configurado no banco.
+
+Transações antigas que eventualmente existam no navegador não são copiadas automaticamente para o PostgreSQL. A integração não apaga os dados antigos do navegador, mas deixa de carregá-los no painel.
+
+### API web
+
+- `POST /api/users`: cria uma conta Gmail.
+- `POST /api/login`: autentica e retorna o token JWT.
+- `GET /api/transactions`: lista as transações do usuário autenticado.
+- `POST /api/transactions`: cria uma transação para esse usuário.
+- `PUT /api/transactions/:id`: atualiza uma transação.
+- `DELETE /api/transactions/:id`: remove uma transação.
+- `GET /api/dashboard`: retorna os totais do usuário.
+
+### CSV e Excel
+
+A exportação gera `transacoes.csv` em UTF-8 com BOM, usando ponto e vírgula entre colunas, vírgula decimal e datas `dd/mm/aaaa`. Inclui ID, tipo, valor, data, categoria e observação. A importação aceita cabeçalhos em português ou inglês e separadores por ponto e vírgula ou vírgula. Os registros importados são enviados à API e gravados no PostgreSQL.
+
+## Aplicativo Android
+
+A pasta `android/` contém um APK wrapper Android que abre a versão web do sistema. Ele usa a mesma API PostgreSQL e conta do PC, desde que o aparelho consiga acessar `172.28.4.149:3000` pela rede. O servidor atual usa HTTP e deve permanecer em uma rede confiável; configure HTTPS antes de expor o sistema publicamente. As classes Compose/Room antigas continuam no projeto, mas não são abertas pelo launcher atual. Instruções para gerar o APK estão em [android/README.md](android/README.md).
+
+## Arquivos principais
+
+- `login.html` / `login.js`: tela e lógica de cadastro/login web.
+- `index.html` / `app.js`: painel e operações web, conectados à API.
+- `styles.css`: estilos da aplicação web.
+- `backend/server.js`: API Express e servidor dos arquivos web.
+- `backend/db.js`: conexão PostgreSQL configurada por `backend/.env`.
+- `backend/authMiddleware.js`: validação dos tokens JWT.
+- `manifest.json` / `service-worker.js`: instalação PWA e cache de recursos web.
 

@@ -24,92 +24,82 @@ Arquitetura e arquivos principais
 - `service-worker.js`: cache simples do app shell para funcionar offline.
 - `icon.svg`: ícone do app usado no manifest e em atalhos.
 - `README.md`: instruções rápidas de uso e empacotamento com Capacitor.
-- `DOCUMENTATION.md`: este documento.
+# Documentação técnica — Gestão Financeira
 
-Modelo de dados
-- Transaction:
-  - `id`: identificador único (string).
-  - `type`: `income` ou `expense`.
-  - `amount`: número (positivo) — armazenado como um número decimal.
-  - `date`: string no formato ISO `YYYY-MM-DD`.
-  - `category`: string opcional.
-  - `note`: string opcional.
+## Arquitetura atual
 
-Formato CSV suportado
-- Cabeçalho esperado: `id,type,amount,date,category,note`.
-- Cada linha corresponde a uma transação; campos envoltos por aspas são suportados.
+O repositório contém uma aplicação web e um launcher Android:
 
-Como funciona (fluxo de uso)
-1. O usuário abre `index.html` (preferível via servidor local para ativar service worker).
-2. Preenche o formulário e envia: `app.js` valida os campos, cria um objeto `Transaction`, persiste no `localStorage` e re-renderiza a UI.
-3. Resumo (saldo, receitas, despesas) é calculado a partir das transações armazenadas.
-4. Usuário pode filtrar a lista por categoria/nota, exportar todas as transações em CSV ou importar um CSV existente.
-5. No navegador compatível, o app pode ser instalado como PWA (botão ou menu do navegador). Service worker provê cache do app shell.
+- **Web:** frontend HTML/CSS/JavaScript servido pelo Express, API Node.js e persistência de contas e transações no PostgreSQL.
+- **Android:** atividade WebView que abre o mesmo frontend no servidor e, portanto, compartilha a API e o PostgreSQL com o PC. A implementação Compose/Room anterior permanece no código, mas não é a atividade de entrada atual.
 
-Rodando localmente (recomendações)
-- Rode um servidor estático para ativar PWA/service worker. Exemplos:
+Na aplicação web, o token JWT da sessão fica no navegador. As transações não são armazenadas no `localStorage`: leitura, criação e remoção disponíveis no painel passam pela API e pelo PostgreSQL, associadas ao usuário autenticado. A API também tem rota de atualização, embora a interface ainda não ofereça essa ação.
+
+Transações que eventualmente tenham sido salvas por versões antigas no navegador não são migradas automaticamente. A integração não apaga essa cópia antiga, mas a interface atual não a carrega.
+
+## Fluxo web
+
+1. O usuário cria uma conta ou entra com endereço `@gmail.com` em `login.html`.
+2. `login.js` envia as credenciais para `/api/users` ou `/api/login`. O backend usa bcrypt para hash de senha e retorna um JWT após autenticação.
+3. `app.js` envia o JWT nas chamadas à API, carrega as transações de `/api/transactions` e mantém os dados carregados em memória enquanto a página está aberta.
+4. Inclusões e remoções são enviadas à API. O histórico, os totais e os gráficos são atualizados com a resposta ou com o conjunto carregado do banco.
+5. A exportação CSV usa as transações da conta retornadas pela API. A importação valida os campos e envia as linhas ao backend.
+6. O botão **Sair** remove o token da sessão no navegador e abre `login.html`.
+
+## API
+
+As rotas de transações exigem um token JWT válido e filtram operações pelo ID do usuário autenticado:
+
+- `POST /api/users`: cadastro de usuário Gmail.
+- `POST /api/login`: autenticação e emissão de JWT.
+- `GET /api/transactions`: lista transações do usuário.
+- `POST /api/transactions`: cria transação (`type`, `amount`, `date`, `category`, `note`). Os tipos aceitos pelo backend são `receita` e `despesa`.
+- `PUT /api/transactions/:id`: atualiza transação. A rota existe na API; a interface web atual não oferece edição.
+- `DELETE /api/transactions/:id`: remove transação pertencente ao usuário.
+- `GET /api/dashboard`: retorna totais agregados do usuário.
+- `GET /api/test-db`: testa a conexão com PostgreSQL.
+
+## PostgreSQL e configuração
+
+`backend/db.js` carrega as configurações de `backend/.env`:
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+
+O esquema deve fornecer a tabela `users` com `id`, `name`, `email`, `password_hash` e `created_at`, e `transactions` com `id`, `user_id`, `type`, `amount`, `date`, `category`, `note` e `created_at`. O backend não executa migrações nem cria essas tabelas automaticamente.
+
+O endereço da API está definido nos dois arquivos do frontend:
+
+- `login.js`: `http://172.28.4.149:3000/api`
+- `app.js`: `http://172.28.4.149:3000/api`
+
+Se o servidor mudar de IP ou porta, atualize ambos para apontarem ao mesmo backend. O Express serve os arquivos web na porta `PORT` ou, por padrão, `3000`.
+
+Instalação das dependências e inicialização, na raiz do repositório:
 
 ```bash
-npx http-server -c-1
-# ou
-python -m http.server 8000
+npm install --prefix backend
+npm run backend
 ```
 
-- Abra `http://localhost:8080` (ou porta exibida) no navegador. Para testes em celular, use a mesma URL na rede local.
+## Transações e CSV
 
-Empacotamento para app nativo (opcional)
-- Recomendo usar Capacitor para gerar builds Android/iOS. Fluxo resumido:
+O modelo usado pela interface web é `{ id, type, amount, date, category, note }`, adaptado pela API aos valores PostgreSQL. A exportação produz `transacoes.csv` em UTF-8 com BOM, ponto e vírgula como delimitador, vírgula decimal e data `dd/mm/aaaa`. A importação reconhece cabeçalhos em português e inglês e formatos delimitados por vírgula ou ponto e vírgula. Cada linha válida é inserida pela rota protegida de criação.
 
-```bash
-npm init -y
-npm install @capacitor/cli @capacitor/core --save-dev
-npx cap init
-# Copie a pasta do projeto para `www` e então:
-npx cap add android
-npx cap add ios
-npx cap copy
-npx cap open android
-```
+## Android, PWA e arquivos principais
 
-Considerações de segurança e privacidade
-- Todos os dados ficam localmente no dispositivo (localStorage). Não há transmissão para servidores.
-- Faça exportação/backup periódico em CSV para prevenir perda.
+O launcher Android precisa de acesso de rede ao host `172.28.4.149:3000`. Como o servidor atual usa HTTP, `res/xml/network_security_config.xml` permite cleartext apenas para esse host. Use HTTPS antes de expor a aplicação em uma rede pública. A WebView habilita JavaScript e DOM storage para a sessão JWT; usa seletor Android para abrir CSV e `ACTION_CREATE_DOCUMENT` para salvar exportações.
 
-Possíveis melhorias futuras
-- Edição de transações (atualmente há remover; pode-se adicionar editar inline/modal).
-- Relatórios mensais e gráficos por categoria (SVG ou Chart.js) — pendente.
-- Suporte a transações recorrentes e orçamentos mensais.
-- Backend opcional (Node + SQLite/Postgres) para sincronização multiusuário.
-- Melhor tratamento do service worker para atualizações (cache versioning e fallback melhorado).
-
-Testes e verificação
-- Testes manuais recomendados:
-  - Adicionar 5 receitas e 5 despesas; verificar valores de resumo e persistência após reload.
-  - Exportar CSV e reimportar; verificar integridade dos dados.
-  - Testar instalação PWA em Android/iOS (via Chrome/Edge/Safari) e comportamento offline.
-
-Notas do desenvolvedor
-- Projeto construído para ser simples, legível e fácil de estender. Código central em `app.js` é modular o suficiente para migrar a persistência para um backend posteriormente.
-
-Como foi criado
-- Planejamento rápido: definiu-se escopo single-user com foco em simplicidade (CRUD de transações, resumo, import/export).
-- Estrutura: criei manualmente os arquivos principais (`index.html`, `styles.css`, `app.js`) e um `manifest.json` e `service-worker.js` para PWA.
-- Implementação: usei JavaScript vanilla (ES6+), manipulando o DOM diretamente, sem frameworks para manter a base leve e fácil de entender.
-- Testes: verificação manual em navegador desktop e mobile (inserir/editar/remover, export/import CSV, instalar PWA).
-
-Tecnologias usadas
+- `index.html`, `login.html`: interfaces web.
+- `app.js`, `login.js`: lógica de painel, transações e autenticação.
+- `styles.css`: estilos responsivos.
+- `backend/server.js`: servidor Express, autenticação e rotas de negócio.
+- `backend/authMiddleware.js`: autenticação JWT.
+- `backend/db.js`: pool de conexões PostgreSQL.
+- `manifest.json`, `service-worker.js`: metadados de instalação e cache dos recursos web.
+- `android/`: launcher WebView, política de rede e implementação nativa anterior Compose/Room.
 - HTML5 e CSS3: marcação semântica e estilos responsivos.
-- JavaScript (ES6+): lógica de aplicação, módulos simples e eventos DOM.
-- `localStorage`: armazenamento local para persistência de dados no cliente.
-- Service Worker & Web App Manifest: suporte PWA (instalável e cache offline).
-- SVG: ícone simples (`icon.svg`) incluído no manifest.
-- Ferramentas opcionais de empacotamento: Capacitor (recomendado) para transformar em app Android/iOS.
-
-Boas práticas aplicadas
-- Separação clara entre apresentação (`index.html` / `styles.css`) e lógica (`app.js`).
-- Uso de `aria-live` em resumo para informar alterações de valores para leitores de tela.
-- Valores monetários formatados com `Intl.NumberFormat` para `pt-BR`.
-- CSV import/export com tratamento básico de aspas e separadores.
-
-Contato
-- Se quiser que eu expanda a documentação com diagramas, fluxos de dados ou um guia step-by-step para empacotar no Android/iOS, diga qual opção prefere.
